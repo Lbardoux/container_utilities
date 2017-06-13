@@ -1,6 +1,6 @@
 #include <bits/stdc++.h> // Brute force includes
 
-#include "../../stl_streaming/container_utilities.hpp"
+#include "container_utilities.hpp"
 
 
 //-----------------------------------------------------------------------------
