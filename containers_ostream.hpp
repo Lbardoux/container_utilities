@@ -31,23 +31,24 @@
 #ifndef MTL_STL_STREAMING_HPP_INCLUDED
 #define MTL_STL_STREAMING_HPP_INCLUDED
 
-#include <array>       // For explicit specialization of ostream<<.
-#include <cstdlib>     // For std::size_t.
-#include <ostream>     // For std::ostream.
-#include <queue>       // For std::queue creation of begin() && end().
-#include <stack>       // For std::stack creation of begin() && end().
-#include <string>      // For std::basic_string, wchar_t.
-#include <tuple>       // For std::tuple interface and utilities (get<> and std::tuple_size<>).
-#include <utility>     // For std::declval.
+#include <array>     // For explicit specialization of ostream<<.
+#include <cstdlib>   // For std::size_t.
+#include <ostream>   // For std::ostream.
+#include <queue>     // For std::queue creation of begin() && end().
+#include <stack>     // For std::stack creation of begin() && end().
+#include <stdexcept> // For std::runtime_error.
+#include <string>    // For std::basic_string, wchar_t.
+#include <tuple>     // For std::tuple and std::get<> and std::tuple_size<>.
+#include <utility>   // For std::declval.
 
 
-//! @brief Completely disable creation/destruction
+//! @brief Completely disable creation
 #define MTL_UNCREATABLE(type) \
     type(void) = delete;\
     type(const type&) = delete;\
     type(type&&) = delete;\
     type& operator=(const type&) = delete;\
-    type& operator=(type&&) = delete
+    type& operator=(type&&) = delete\
 
 
 namespace mtl_details
@@ -85,7 +86,7 @@ namespace mtl_details
         }
         //! @}
         MTL_UNCREATABLE(stl_exposer);
-        virtual ~stl_exposer(void) =0;
+        ~stl_exposer(void) = delete;
     };
 }
 
@@ -271,74 +272,84 @@ ArrayType* end(ArrayType (&array)[N])
 //-----------------------------------------------------------------------------
 /**
  * @class array_cast
- * @brief Provides a class with begin() and enarray_castarray_castd() statements to display the array behind a specific pointer.
+ * @brief Provides a class with begin() and end() statements to display the array behind a specific pointer.
  * @tparam T The type of your pointer (T = double for double*)
  * It doesn't deal with memory (new or delete) or overflow if you set up a wrong @b size value.
  */
 template<typename T>
 struct array_cast final
 {
-    T* ptr;
-    const std::size_t n;
-    array_cast(T* array, std::size_t size) : ptr(array), n(size)
-    {
-    }
-    ~array_cast(void) = default;
-    MTL_UNCREATABLE(array_cast);
+    private:
+        T* ptr;
+        const std::size_t n;
+    public:
+        /**
+         * @brief Create an iterable array from a raw pointer.
+         * @param[in] array The pointer you wanna iterate through.
+         * @param[in] size  The size of the hided array (number of element).
+         * @throw std::runtime_error If @b array is nullptr.
+         * @throw std::runtime_error If @b size is 0.
+         */
+        array_cast(T* array, std::size_t size) : ptr(array), n(size)
+        {
+            if (array == nullptr)
+            {
+                throw std::runtime_error("array_cast<> on a null pointer !");
+            }
+            if (size == 0u)
+            {
+                throw std::runtime_error("array_cast<> with a null size !");
+            }
+        }
+
+        //! @{
+        /**
+         * @brief Implements the <b>iterator-pair idiom</b> for <b>array_cast</b> helper class.
+         * Applies it for const and none const reference.
+         * @tparam T The value_type of the array_cast helper.
+         * @param[in] p (const or not) The array_cast helper you want the begin/end iterator.
+         * @return The desired iterator.
+         *
+         * @warning Don't call these functions by yourself.
+         *
+         * Usage :
+         * @code
+         * double* arr[3] = new double[3];
+         * //Fill it
+         * std::cout << array_cast<double>(arr, 3) << std::endl;
+         *
+         * // Don't forget this
+         * delete[] arr;
+         * @endcode
+         */
+        template<typename F>
+        friend F* begin(array_cast<F>& p)
+        {
+            return &p.ptr[0u];
+        }
+        template<typename F>
+        friend F* end(array_cast<F>& p)
+        {
+            return &p.ptr[p.n];
+        }
+        template<typename F>
+        friend const F* begin(const array_cast<F>& p)
+        {
+            return &p.ptr[0u];
+        }
+        template<typename F>
+        friend const F* end(const array_cast<F>& p)
+        {
+            return &p.ptr[p.n];
+        }
+        //! @}
+        ~array_cast(void) = default;
+        MTL_UNCREATABLE(array_cast);
 };
 
-//! @{
-/**
- * @brief Implements the <b>iterator-pair idiom</b> for <b>array_cast</b> helper class.
- * Applies it for const and none const reference.
- * @tparam T The value_type of the array_cast helper.
- * @param[in] p (const or not) The array_cast helper you want the begin/end iterator.
- * @return The desired iterator.
- *
- * @warning Don't call these functions by yourself.
- *
- * Usage :
- * @code
- * double* arr[3] = new double[3];
- * //Fill it
- * std::cout << array_cast<double>(arr, 3) << std::endl;
- *
- * // Don't forget this
- * delete[] arr;
- * @endcode
- */
-//-----------------------------------------------------------------------------
-template<typename T>
-T* begin(array_cast<T>& p)
-{
-    return &p.ptr[0u];
-}
 
-//-----------------------------------------------------------------------------
-template<typename T>
-T* end(array_cast<T>& p)
-{
-    return &p.ptr[p.n];
-}
-
- //-----------------------------------------------------------------------------
-template<typename T>
-const T* begin(const array_cast<T>& p)
-{
-    return &p.ptr[0u];
-}
-
-//-----------------------------------------------------------------------------
-template<typename T>
-const T* end(const array_cast<T>& p)
-{
-    return &p.ptr[p.n];
-}
-//! @}
-
-
-#define MTL_IS_TUPLE     1u
-#define MTL_IS_NOT_TUPLE 0u
+#define MTL_IS_TUPLE     1u //!< A specific flag for compile time branchement.
+#define MTL_IS_NOT_TUPLE 0u //!< A specific flag for compile time branchement.
 
 namespace mtl_details
 {
@@ -346,6 +357,7 @@ namespace mtl_details
     /**
      * @class Int
      * @brief A helper class to choose which overload to call.
+     * Basicaly, this class holds an uint for me.
      * @warning You shall not use this class by yourself.
      */
     template<std::size_t N> struct Int final {};
@@ -412,7 +424,7 @@ namespace mtl_details
      * warning You shall not use this function by yourself.
      */
     template<typename T>
-    void tuple_print_rec(std::ostream& out, const T& tuple, ::mtl_details::Int<1>)
+    void tuple_print_rec(std::ostream& out, const T& tuple, ::mtl_details::Int<MTL_IS_TUPLE>)
     {
         out << std::get<std::tuple_size<T>::value-1>(tuple);
     }
@@ -444,7 +456,7 @@ namespace mtl_details
      * @warning You shall not use this function by yourself.
      */
     template<typename Container>
-    std::ostream& print(std::ostream& out, const Container& container, ::mtl_details::Int<0u>)
+    std::ostream& print(std::ostream& out, const Container& container, ::mtl_details::Int<MTL_IS_NOT_TUPLE>)
     {
         out << "[ ";
         auto iterator_end = end(container);
@@ -465,7 +477,7 @@ namespace mtl_details
      * @warning You shall not use this function by yourself.
      */
     template<typename Container>
-    std::ostream& print(std::ostream& out, const Container& container, ::mtl_details::Int<1u>)
+    std::ostream& print(std::ostream& out, const Container& container, ::mtl_details::Int<MTL_IS_TUPLE>)
     {
         out << "( ";
         ::mtl_details::tuple_print_rec(out, container,
@@ -500,7 +512,7 @@ namespace mtl_details
     struct enable_if_not_same final
     {
         MTL_UNCREATABLE(enable_if_not_same);
-        typedef int type;
+        typedef int type; //!< Provides a type, this is it.
     };
     //! @brief No such implementation, it will fail overload selection.
     template<template<typename...> class C1>
@@ -509,7 +521,7 @@ namespace mtl_details
     //-----------------------------------------------------------------------------
     /**
      * @class has_iterators
-     * @brief Set @b ::value to true if @b T has iterators, @b false otherwise.
+     * @brief Set @b value to true if @b T has iterators, @b false otherwise.
      * @tparam T The type you wanna check for iterators.
      * @warning You shall not use this function by yourself.
      */
@@ -517,12 +529,20 @@ namespace mtl_details
     struct has_iterators final
     {
         private:
+            /**
+             * @brief Ensure than C has basic iterator idiom (begin && end).
+             * @return true
+             */
             template<typename C, typename b = decltype(begin(std::declval<C>())),
                                  typename e = decltype(end(std::declval<C>()))>
             static constexpr bool check(int)
             {
                 return true;
             }
+            /**
+             * @brief C doesn't implement iterator idiom.
+             * @return false
+             */
             template<typename C>
             static constexpr bool check(...)
             {
@@ -541,10 +561,11 @@ namespace mtl_details
      * @warning You shall not use this function by yourself.
      */
     template<bool B> struct grant_access;
+    //! Valid case, it grants access.
     template<> struct grant_access<true> final
     {
         MTL_UNCREATABLE(grant_access);
-        typedef int granted;
+        typedef int granted; //!< This type exists, so SFINAE doesn't fail.
     };
 }
 
@@ -602,8 +623,8 @@ std::ostream& operator<<(std::ostream& output, const std::array<T, S>& array)
  * @brief Defines an overload for most of STL containers (except std::array).
  * @tparam Container A type which accept multiple template arguments.
  * @tparam Values    Every @b Container template argument types.
- * @param[in,out] out The output stream you wanna use.
- * @param[in]     c   The STL container you wanna display.
+ * @param[in,out] output The output stream you wanna use.
+ * @param[in]     c      The STL container you wanna display.
  *
  * It works on :
  *   - std::vector
@@ -650,7 +671,7 @@ auto operator<<(std::ostream& output, const Container<Types...>& c)
 #undef MTL_IS_TUPLE
 #undef MTL_UNCREATABLE
 
-#endif
+
 /**
  * @page page_container_utilities Container Utilities
  * This header provides a tons of template to offers a simple interface to use STL containers and C-style arrays
@@ -741,3 +762,4 @@ auto operator<<(std::ostream& output, const Container<Types...>& c)
  * Made by MTLCRBN
  * Here is the <a href="https://github.com/Lbardoux/container_utilities.git">github repository</a>.
  */
+#endif
