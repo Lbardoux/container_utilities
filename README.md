@@ -1,4 +1,4 @@
-# container_utilities
+# Containers Ostream
 ## Synopsis
 This header provides some templates to print **STL containers**, **C-style array**
 and **array pointer (such as double*)** into *std::ostream*.<br />
