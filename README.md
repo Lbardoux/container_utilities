@@ -1,72 +1,72 @@
-# operator<< for STL containers
+# container_utilities
+## Synopsis
+This header provides some templates to print **STL containers**, **C-style array**
+and **array pointer (such as double*)** into *std::ostream*.<br />
+The "graphic" (if you can call that graphic) format is quite simple :
+  1. Display objects which implements the [Iterator pair idiom](https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Iterator_Pair) with this format:
+     ```[ elt1 elt2 elt3 ... eltn ]```
+  2. Display objects which matches the tuple interface like this :
+     ```( elt1 elt2 elt3 ... eltn )```
+
+As you can see, there is no separator, but feel free to edit this file if you want to add
+any.
+To do so, one can find the official [repository](https://github.com/Lbardoux/container_utilities.git).
+
 ---
 
-## Compilation prerequisite
-You just need to provide a C++ version at least C++11 when you compile :
-> -std=c++11
+## Compilation
+This is a _.hpp_ so you'll need a C++ compiler (cpt.obvious forever) and provide
+at least **-std=c++11** option.<br />
+Well done, you're able to use this header within your code !
 
 ---
----
 
-## Usage
-### std::coutable
-You just have to call the operator<< as usual :
+## Tests
+If you're a developer, and you want to enhance this code, you could run tests to ensure than you don't break anything.<br />
+To do so, one may follow these instructions using **cmake**:
 ```
-std::cout << myvector << std::endl;
-std::cout << mytuple  << std::end;
-std::cout << myStack  << std::endl;
+# cd test.cpp_directory
+mkdir build
+cd build
+cmake ..
+make
+ctest
 ```
-But be aware, there is no flush or newline characte with my operators.
+
+If nothing prompt, well done, tests are successfull.
 
 ---
 
-### Iterate through std::stack or/and std::queue
-You could also iterate through these containers without any useless copy or loss.
-To do so, you could now use the begin() and end() functions (non member) as c++ standard
-functions.
+## Supported Containers
+Every STL containers are supported.
+
+In addition, except char[] and unsigned char[] (because it conflicts with current STL implementation), every possible
+**C-style arrays** are supported (as long as the type of your array implements the operator<<(std::ostream&)).<br />
+Keep in mind than this file won't help you for pointers, this in particular won't work at all :
 ```
-#include <algorithm>
-#include <functional>
-#include <iostream>
-
-#include "stl_streaming.hpp"
-
-int main()
-{
-	std::stack<int> stack;
-	for(int i=0;i<15;++i)
-		stack.push(i);
-	
-	std::cout << "before : " << stack << std::endl;
-	std::for_each(begin(stack), end(stack), [](int& i){i += 2;});
-	std::cout << "after  : " << stack << std::endl;
-
-	return 0;
-}
+int* array = new int[6];
+// fill it.
+std::cout << array << std::endl;
+// display a random memory address.
 ```
-In addition, you could write template code using begin() and end() because they work with other
-standard containers such as std::list, std::vector, etc.
+You're maybe thinking : "Oh why ?". This is because I'm using template inference on C-style array to deduce their length.
+It is typically impossible with such pointers. Even worse, it could collide with another intention of your, showing
+the address of this pointer for instance.
+For these cases, it is less user friendly, because you'll have to specify by yourself :
+  - The array length.
+  - Your intention of displaying the content and not the address of the first element.
 
-#### Warning !
-But don't bother try to use them for erase, remove, or moving element because it will break your program (you're aware).
-Use them to iterate in read, or to modify all values instead.
-In a nutshell :
-  - std::cout = fine
-  - apply_to_each = fine
-  - erase = Segfault
-
----
-
-### Less useful, check if a type is tuplable.
-It's just a trait to ensure a type **T** doew match for the tuple interface.
-Meaning there exist implementation for :
- 1. std::tuple_size
- 2. std::get<0> at least
+```
+double* arr = new double[5];
+// Fill it with whatever you want
+std::cout << array_cast<double>(arr, 5) << std::endl;
+// Here is the content of your array.
+```
 
 ---
----
+
 ## Copyright
-Copyright 2017 MTLCRBN
+Copyright 2017 MTLCRBN<br />
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
   1. Redistributions of source code must retain the above copyright notice, this list of
