@@ -322,23 +322,19 @@ struct array_cast final
          * delete[] arr;
          * @endcode
          */
-        template<typename F>
-        friend F* begin(array_cast<F>& p)
+        friend T* begin(array_cast<T>& p)
         {
             return &p.ptr[0u];
         }
-        template<typename F>
-        friend F* end(array_cast<F>& p)
+        friend T* end(array_cast<T>& p)
         {
             return &p.ptr[p.n];
         }
-        template<typename F>
-        friend const F* begin(const array_cast<F>& p)
+        friend const T* begin(const array_cast<T>& p)
         {
             return &p.ptr[0u];
         }
-        template<typename F>
-        friend const F* end(const array_cast<F>& p)
+        friend const T* end(const array_cast<T>& p)
         {
             return &p.ptr[p.n];
         }
